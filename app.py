@@ -11,8 +11,7 @@ st.title("📊 Advanced Student Performance Dashboard")
 
 @st.cache_data
 def load_data():
-    return pd.read_csv("your_fixed_dataset.csv")
-
+    return pd.read_csv("Students_Grading_Dataset.csv")
 df = load_data()
 
     # Display dataset
