@@ -98,8 +98,11 @@ st.header("🟢 Grade Distribution")
 grade_labels = label_encoders['Grade'].classes_
 grade_counts = df['Grade'].value_counts()
 
+# Generate unique colors for each grade
+colors = sns.color_palette("viridis", len(grade_labels))
+
 fig, ax = plt.subplots()
-ax.pie(grade_counts, labels=grade_labels, autopct="%1.1f%%", startangle=90, cmap="viridis")
+ax.pie(grade_counts, labels=grade_labels, autopct="%1.1f%%", colors=colors, startangle=90)
 ax.set_title("Grade Distribution")
 st.pyplot(fig)
 
