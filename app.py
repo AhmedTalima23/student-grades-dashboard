@@ -72,15 +72,35 @@ fig, ax = plt.subplots(figsize=(12, 8))
 sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, ax=ax)
 st.pyplot(fig)
 
-# Interactive Scatter Plot
-st.header("📌 Interactive Scatter Plot")
-x_axis = st.selectbox("Select X-axis", X.columns)
-y_axis = st.selectbox("Select Y-axis", X.columns)
+# Histogram for Categorical Features
+st.header("📊 Histogram of Categorical Features")
+categorical_columns = ['Gender', 'Department', 'Grade']
+
+selected_category = st.selectbox("Select a Categorical Feature", categorical_columns)
 
 fig, ax = plt.subplots()
-sns.scatterplot(x=df[x_axis], y=df[y_axis], hue=df['Grade'], palette="viridis", ax=ax)
-ax.set_xlabel(x_axis)
-ax.set_ylabel(y_axis)
+sns.histplot(df[selected_category], kde=False, color='teal', ax=ax)
+ax.set_title(f"Distribution of {selected_category}")
+st.pyplot(fig)
+
+# Pie Chart - Gender Distribution
+st.header("🟠 Gender Distribution")
+gender_labels = label_encoders['Gender'].classes_
+gender_counts = df['Gender'].value_counts()
+
+fig, ax = plt.subplots()
+ax.pie(gender_counts, labels=gender_labels, autopct="%1.1f%%", colors=["#ff9999", "#66b3ff"], startangle=90)
+ax.set_title("Gender Distribution")
+st.pyplot(fig)
+
+# Pie Chart - Grade Distribution
+st.header("🟢 Grade Distribution")
+grade_labels = label_encoders['Grade'].classes_
+grade_counts = df['Grade'].value_counts()
+
+fig, ax = plt.subplots()
+ax.pie(grade_counts, labels=grade_labels, autopct="%1.1f%%", startangle=90, cmap="viridis")
+ax.set_title("Grade Distribution")
 st.pyplot(fig)
 
 # Download Processed Data
