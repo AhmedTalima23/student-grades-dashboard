@@ -8,9 +8,11 @@ from sklearn.preprocessing import LabelEncoder
 # Load dataset
 st.title("📊 Advanced Student Performance Dashboard")
 
+uploaded_file = st.file_uploader("Upload CSV", type="csv")
 
-    df = pd.read_csv("Students_Grading_Dataset.csv")
-
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.success("Data uploaded successfully!")
 
     # Display dataset
     if st.checkbox("Show Raw Data"):
@@ -27,13 +29,9 @@ st.title("📊 Advanced Student Performance Dashboard")
 
     # Interactive Filters
     st.sidebar.header("Filters")
-    department_labels = label_encoders['Department'].classes_
-    department_options = [f"{label} ({code})" for code, label in enumerate(department_labels)]
-    selected_departments = st.sidebar.multiselect("Select Department", department_options)
-
-    if selected_departments:
-        selected_codes = [int(option.split("(")[1].strip(")")) for option in selected_departments]
-        df = df[df['Department'].isin(selected_codes)]
+    department = st.sidebar.multiselect("Select Department", df['Department'].unique())
+    if department:
+        df = df[df['Department'].isin(department)]
 
     st.sidebar.subheader("Range Filters")
     age_range = st.sidebar.slider("Select Age Range", int(df['Age'].min()), int(df['Age'].max()), (int(df['Age'].min()), int(df['Age'].max())))
