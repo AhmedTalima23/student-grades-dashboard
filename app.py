@@ -72,14 +72,17 @@ fig, ax = plt.subplots(figsize=(12, 8))
 sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, ax=ax)
 st.pyplot(fig)
 
-# Histogram for Categorical Features
+# Histogram for Categorical Features (with decoded values)
 st.header("📊 Histogram of Categorical Features")
 categorical_columns = ['Gender', 'Department', 'Grade']
 
 selected_category = st.selectbox("Select a Categorical Feature", categorical_columns)
 
+# Decode the selected category using label encoder
+decoded_column = label_encoders[selected_category].inverse_transform(df[selected_category])
+
 fig, ax = plt.subplots()
-sns.histplot(df[selected_category], kde=False, color='teal', ax=ax)
+sns.histplot(decoded_column, kde=False, color='teal', ax=ax)
 ax.set_title(f"Distribution of {selected_category}")
 st.pyplot(fig)
 
