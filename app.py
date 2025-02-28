@@ -47,7 +47,7 @@ elif page == "Detailed Analysis":
     # Correlation Heatmap
     st.subheader("🔬 Correlation Matrix")
     fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
+    sns.heatmap(df[numeric_cols].corr(), annot=True, cmap="coolwarm", fmt=".2f")
     st.pyplot(fig)
 
     # Feature Comparisons
