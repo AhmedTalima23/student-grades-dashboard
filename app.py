@@ -33,10 +33,6 @@ if uploaded_file is not None:
     if department:
         df = df[df['Department'].isin(department)]
 
-    grade = st.sidebar.multiselect("Select Grade", df['Grade'].unique())
-    if grade:
-        df = df[df['Grade'].isin(grade)]
-
     st.sidebar.subheader("Range Filters")
     age_range = st.sidebar.slider("Select Age Range", int(df['Age'].min()), int(df['Age'].max()), (int(df['Age'].min()), int(df['Age'].max())))
     df = df[(df['Age'] >= age_range[0]) & (df['Age'] <= age_range[1])]
