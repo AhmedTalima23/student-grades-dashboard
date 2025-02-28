@@ -29,9 +29,15 @@ if uploaded_file is not None:
 
     # Interactive Filters
     st.sidebar.header("Filters")
-    department = st.sidebar.multiselect("Select Department", df['Department'].unique())
-    if department:
-        df = df[df['Department'].isin(department)]
+
+    department_mapping = {idx: name for idx, name in enumerate(label_encoders['Department'].classes_)}
+    department_names = [department_mapping[val] for val in df['Department'].unique()]
+
+    selected_departments = st.sidebar.multiselect("Select Department", department_names)
+
+    if selected_departments:
+        selected_indices = [key for key, value in department_mapping.items() if value in selected_departments]
+        df = df[df['Department'].isin(selected_indices)]
 
     st.sidebar.subheader("Range Filters")
     age_range = st.sidebar.slider("Select Age Range", int(df['Age'].min()), int(df['Age'].max()), (int(df['Age'].min()), int(df['Age'].max())))
