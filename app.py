@@ -3,53 +3,103 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load your dataset (replace with actual dataset path)
-data = pd.read_csv("Students_Grading_Dataset.csv")
-
-# Set page configuration
+# Set Streamlit page configuration
 st.set_page_config(page_title="Student Performance Dashboard", layout="wide")
 
-# Title
-st.title("📊 Student Performance Dashboard")
+# Load dataset
+@st.cache_data
+def load_data():
+    return pd.read_csv("Students_Grading_Dataset.csv")
 
-# Key Metrics
-st.header("Key Metrics")
-col1, col2, col3 = st.columns(3)
+df = load_data()
 
-col1.metric("Average Final Grade", round(data['Final_Score'].mean(), 2))
-col2.metric("Average Attendance (%)", round(data['Attendance (%)'].mean(), 2))
-col3.metric("Average Study Hours/Week", round(data['Study_Hours_per_Week'].mean(), 2))
+# Sidebar - Navigation
+st.sidebar.title("📊 Navigation")
+page = st.sidebar.radio("Go to", ["Overview", "Detailed Analysis", "Feature Insights"])
 
-# Feature Importance (You should calculate and load feature importance)
-st.header("Feature Importance")
-feature_importance = pd.DataFrame({
-    "Feature": ["Attendance (%)", "Total_Score", "Midterm_Score", "Final_Score", "Participation_Score"],
-    "Importance": [0.45, 0.15, 0.12, 0.10, 0.08]
-})
+# Header
+st.title("🎓 Student Performance Dashboard")
 
-fig, ax = plt.subplots()
-sns.barplot(y="Feature", x="Importance", data=feature_importance, palette="viridis", ax=ax)
-plt.xlabel("Feature Importance Score")
-st.pyplot(fig)
+# Overview Page
+if page == "Overview":
+    st.header("📌 General Information")
 
-# Correlation Analysis
-st.header("Correlation Analysis")
+    # Key Metrics
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Students", df.shape[0])
+    col2.metric("Average Grade", round(df["Total_Score"].mean(), 2))
+    col3.metric("Average Study Hours", round(df["Study_Hours_per_Week"].mean(), 2))
 
-x_axis = st.selectbox("Select X-axis feature", ["Attendance (%)", "Study_Hours_per_Week", "Sleep_Hours_per_Night"])
-y_axis = st.selectbox("Select Y-axis feature", ["Final_Score", "Total_Score", "Midterm_Score"])
+    # Grade Distribution
+    st.subheader("📈 Grade Distribution")
+    fig, ax = plt.subplots()
+    sns.countplot(x="Grade", data=df, palette="viridis", order=sorted(df["Grade"].unique()))
+    st.pyplot(fig)
 
-fig, ax = plt.subplots()
-sns.scatterplot(x=data[x_axis], y=data[y_axis], alpha=0.7)
-plt.title(f"{x_axis} vs {y_axis}")
-st.pyplot(fig)
+    # Data Preview
+    st.subheader("🔍 Preview Dataset")
+    st.dataframe(df.head(10))
 
-# Conclusion
-st.header("Conclusion")
-st.write("1. **Attendance** is the most critical factor impacting student grades."
-         "\n2. **Total score and midterm performance** are also strong predictors."
-         "\n3. Improving participation and study hours can enhance academic outcomes.")
+# Detailed Analysis Page
+elif page == "Detailed Analysis":
+    st.header("📊 In-Depth Student Analysis")
 
-st.write("### Recommendations:")
-st.write("- Encourage regular attendance through engagement programs."
-         "\n- Implement targeted interventions for low-performing students."
-         "\n- Promote consistent study habits and monitor participation levels.")
+    # Correlation Heatmap
+    st.subheader("🔬 Correlation Matrix")
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
+    st.pyplot(fig)
+
+    # Feature Comparisons
+    st.subheader("📌 Compare Features")
+    feature_x = st.selectbox("Select X-axis Feature", df.columns)
+    feature_y = st.selectbox("Select Y-axis Feature", df.columns)
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=df[feature_x], y=df[feature_y], hue=df["Grade"], palette="viridis")
+    st.pyplot(fig)
+
+    # Study Hours vs Grades
+    st.subheader("📚 Study Hours vs. Grades")
+    fig, ax = plt.subplots()
+    sns.boxplot(x="Grade", y="Study_Hours_per_Week", data=df, palette="Set2")
+    st.pyplot(fig)
+
+# Feature Insights Page
+elif page == "Feature Insights":
+    st.header("🔎 Feature Importance Insights")
+
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import LabelEncoder
+
+    # Prepare Data
+    df_encoded = df.copy()
+    label_encoders = {}
+
+    for column in df_encoded.select_dtypes(include='object').columns:
+        le = LabelEncoder()
+        df_encoded[column] = le.fit_transform(df_encoded[column])
+        label_encoders[column] = le
+
+    X = df_encoded.drop("Grade", axis=1)
+    y = df_encoded["Grade"]
+
+    # Train RandomForest Model
+    rf = RandomForestClassifier()
+    rf.fit(X, y)
+
+    feature_importance = pd.DataFrame({"Feature": X.columns, "Importance": rf.feature_importances_})
+    feature_importance = feature_importance.sort_values(by="Importance", ascending=False)
+
+    # Display Feature Importance
+    st.subheader("📊 Feature Importance")
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x="Importance", y="Feature", data=feature_importance, palette="mako")
+    st.pyplot(fig)
+
+    st.write("### Key Insights")
+    st.markdown("- **Attendance (%)** is the most influential factor on student grades.")
+    st.markdown("- **Study Hours** have a moderate effect, but not as strong as attendance.")
+    st.markdown("- **Quizzes and Assignments** play a significant role in predicting performance.")
+
+# Footer
+st.sidebar.info("Built with ❤️ using Streamlit")
