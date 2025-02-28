@@ -1,62 +1,89 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
-# Load the dataset
-@st.cache_data
-def load_data():
-    df = pd.read_csv("Students_Grading_Dataset.csv")
-
-    # Drop non-numeric columns
-    df.drop(['Student_ID', 'First_Name', 'Last_Name', 'Email'], axis=1, inplace=True)
-
-    # Encode categorical columns
-    categorical_cols = ['Gender', 'Department', 'Extracurricular_Activities', 'Internet_Access_at_Home', 'Parent_Education_Level', 'Family_Income_Level', 'Grade']
-    df[categorical_cols] = df[categorical_cols].apply(LabelEncoder().fit_transform)
-
-    return df
-
-data = load_data()
-
-# Title
+# Load dataset
 st.title("📊 Advanced Student Performance Dashboard")
 
-# Sidebar Filters
-st.sidebar.header("🔍 Filter Options")
-selected_department = st.sidebar.selectbox("Select Department", data['Department'].unique())
-filtered_data = data[data['Department'] == selected_department]
+uploaded_file = st.file_uploader("Upload CSV", type="csv")
 
-# Summary Statistics
-st.subheader("📈 Data Overview")
-st.write(filtered_data.describe())
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.success("Data uploaded successfully!")
 
-# Correlation Heatmap
-st.subheader("🔬 Correlation Heatmap")
-plt.figure(figsize=(10, 6))
-sns.heatmap(filtered_data.corr(), annot=True, cmap='coolwarm')
-st.pyplot(plt)
+    # Display dataset
+    if st.checkbox("Show Raw Data"):
+        st.write(df.head())
 
-# Grade Distribution
-st.subheader("🎓 Grade Distribution")
-fig, ax = plt.subplots()
-sns.countplot(x='Grade', data=filtered_data, palette='viridis', ax=ax)
-st.pyplot(fig)
+    # Data Preprocessing
+    df.drop(['Student_ID', 'First_Name', 'Last_Name', 'Email'], axis=1, inplace=True)
 
-# Feature Importance
-st.subheader("📊 Feature Importance")
-X = filtered_data.drop("Grade", axis=1)
-y = filtered_data["Grade"]
+    label_encoders = {}
+    for column in df.select_dtypes(include='object').columns:
+        le = LabelEncoder()
+        df[column] = le.fit_transform(df[column])
+        label_encoders[column] = le
 
-model = RandomForestClassifier()
-model.fit(X, y)
+    # Interactive Filters
+    st.sidebar.header("Filters")
+    department = st.sidebar.multiselect("Select Department", df['Department'].unique())
+    if department:
+        df = df[df['Department'].isin(department)]
 
-importance_df = pd.DataFrame({"Feature": X.columns, "Importance": model.feature_importances_}).sort_values(by="Importance", ascending=False)
-fig, ax = plt.subplots()
-sns.barplot(x="Importance", y="Feature", data=importance_df, palette='mako', ax=ax)
-st.pyplot(fig)
+    grade = st.sidebar.multiselect("Select Grade", df['Grade'].unique())
+    if grade:
+        df = df[df['Grade'].isin(grade)]
 
-st.success("✅ Dashboard Loaded Successfully!")
+    st.sidebar.subheader("Range Filters")
+    age_range = st.sidebar.slider("Select Age Range", int(df['Age'].min()), int(df['Age'].max()), (int(df['Age'].min()), int(df['Age'].max())))
+    df = df[(df['Age'] >= age_range[0]) & (df['Age'] <= age_range[1])]
+
+    # Key Metrics
+    st.header("📈 Key Metrics")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Average Total Score", round(df['Total_Score'].mean(), 2))
+    col2.metric("Average Study Hours", round(df['Study_Hours_per_Week'].mean(), 2))
+    col3.metric("Average Stress Level", round(df['Stress_Level (1-10)'].mean(), 2))
+
+    # Feature Importance
+    st.header("🔍 Feature Importance")
+    X = df.drop('Grade', axis=1)
+    y = df['Grade']
+
+    model = RandomForestClassifier()
+    model.fit(X, y)
+
+    feature_importance = pd.DataFrame({"Feature": X.columns, "Importance": model.feature_importances_})
+    feature_importance = feature_importance.sort_values(by="Importance", ascending=False)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(x=feature_importance["Importance"], y=feature_importance["Feature"], palette="magma", ax=ax)
+    ax.set_title("Feature Importance for Predicting Student Grades")
+    st.pyplot(fig)
+
+    # Correlation Heatmap
+    st.header("📊 Correlation Heatmap")
+    fig, ax = plt.subplots(figsize=(12, 8))
+    sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, ax=ax)
+    st.pyplot(fig)
+
+    # Interactive Scatter Plot
+    st.header("📌 Interactive Scatter Plot")
+    x_axis = st.selectbox("Select X-axis", X.columns)
+    y_axis = st.selectbox("Select Y-axis", X.columns)
+
+    fig, ax = plt.subplots()
+    sns.scatterplot(x=df[x_axis], y=df[y_axis], hue=df['Grade'], palette="viridis", ax=ax)
+    ax.set_xlabel(x_axis)
+    ax.set_ylabel(y_axis)
+    st.pyplot(fig)
+
+    # Download Processed Data
+    st.header("📥 Download Processed Data")
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button("Download CSV", data=csv, file_name="processed_student_data.csv", mime="text/csv")
+
+    st.success("Dashboard Updated Successfully!")
