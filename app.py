@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 st.title("📊 Advanced Student Performance Dashboard")
 
 
-    df = pd.read_csv()
+    df = pd.read_csv("Students_Grading_Dataset.csv")
 
 
     # Display dataset
