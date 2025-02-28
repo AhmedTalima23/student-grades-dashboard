@@ -8,11 +8,12 @@ from sklearn.preprocessing import LabelEncoder
 # Load dataset
 st.title("📊 Advanced Student Performance Dashboard")
 
-uploaded_file = st.file_uploader("Upload CSV", type="csv")
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    st.success("Data uploaded successfully!")
+@st.cache_data
+def load_data():
+    return pd.read_csv("your_fixed_dataset.csv")
+
+df = load_data()
 
     # Display dataset
     if st.checkbox("Show Raw Data"):
