@@ -1,105 +1,62 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
 
-# Set Streamlit page configuration
-st.set_page_config(page_title="Student Performance Dashboard", layout="wide")
-
-# Load dataset
+# Load the dataset
 @st.cache_data
 def load_data():
-    return pd.read_csv("Students_Grading_Dataset.csv")
+    df = pd.read_csv("Students_Grading_Dataset.csv")
 
-df = load_data()
+    # Drop non-numeric columns
+    df.drop(['Student_ID', 'First_Name', 'Last_Name', 'Email'], axis=1, inplace=True)
 
-# Sidebar - Navigation
-st.sidebar.title("📊 Navigation")
-page = st.sidebar.radio("Go to", ["Overview", "Detailed Analysis", "Feature Insights"])
+    # Encode categorical columns
+    categorical_cols = ['Gender', 'Department', 'Extracurricular_Activities', 'Internet_Access_at_Home', 'Parent_Education_Level', 'Family_Income_Level', 'Grade']
+    df[categorical_cols] = df[categorical_cols].apply(LabelEncoder().fit_transform)
 
-# Header
-st.title("🎓 Student Performance Dashboard")
+    return df
 
-# Overview Page
-if page == "Overview":
-    st.header("📌 General Information")
+data = load_data()
 
-    # Key Metrics
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Students", df.shape[0])
-    col2.metric("Average Grade", round(df["Total_Score"].mean(), 2))
-    col3.metric("Average Study Hours", round(df["Study_Hours_per_Week"].mean(), 2))
+# Title
+st.title("📊 Advanced Student Performance Dashboard")
 
-    # Grade Distribution
-    st.subheader("📈 Grade Distribution")
-    fig, ax = plt.subplots()
-    sns.countplot(x="Grade", data=df, palette="viridis", order=sorted(df["Grade"].unique()))
-    st.pyplot(fig)
+# Sidebar Filters
+st.sidebar.header("🔍 Filter Options")
+selected_department = st.sidebar.selectbox("Select Department", data['Department'].unique())
+filtered_data = data[data['Department'] == selected_department]
 
-    # Data Preview
-    st.subheader("🔍 Preview Dataset")
-    st.dataframe(df.head(10))
+# Summary Statistics
+st.subheader("📈 Data Overview")
+st.write(filtered_data.describe())
 
-# Detailed Analysis Page
-elif page == "Detailed Analysis":
-    st.header("📊 In-Depth Student Analysis")
+# Correlation Heatmap
+st.subheader("🔬 Correlation Heatmap")
+plt.figure(figsize=(10, 6))
+sns.heatmap(filtered_data.corr(), annot=True, cmap='coolwarm')
+st.pyplot(plt)
 
-    # Correlation Heatmap
-    st.subheader("🔬 Correlation Matrix")
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
-    st.pyplot(fig)
+# Grade Distribution
+st.subheader("🎓 Grade Distribution")
+fig, ax = plt.subplots()
+sns.countplot(x='Grade', data=filtered_data, palette='viridis', ax=ax)
+st.pyplot(fig)
 
-    # Feature Comparisons
-    st.subheader("📌 Compare Features")
-    feature_x = st.selectbox("Select X-axis Feature", df.columns)
-    feature_y = st.selectbox("Select Y-axis Feature", df.columns)
-    fig, ax = plt.subplots()
-    sns.scatterplot(x=df[feature_x], y=df[feature_y], hue=df["Grade"], palette="viridis")
-    st.pyplot(fig)
+# Feature Importance
+st.subheader("📊 Feature Importance")
+X = filtered_data.drop("Grade", axis=1)
+y = filtered_data["Grade"]
 
-    # Study Hours vs Grades
-    st.subheader("📚 Study Hours vs. Grades")
-    fig, ax = plt.subplots()
-    sns.boxplot(x="Grade", y="Study_Hours_per_Week", data=df, palette="Set2")
-    st.pyplot(fig)
+model = RandomForestClassifier()
+model.fit(X, y)
 
-# Feature Insights Page
-elif page == "Feature Insights":
-    st.header("🔎 Feature Importance Insights")
+importance_df = pd.DataFrame({"Feature": X.columns, "Importance": model.feature_importances_}).sort_values(by="Importance", ascending=False)
+fig, ax = plt.subplots()
+sns.barplot(x="Importance", y="Feature", data=importance_df, palette='mako', ax=ax)
+st.pyplot(fig)
 
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.preprocessing import LabelEncoder
-
-    # Prepare Data
-    df_encoded = df.copy()
-    label_encoders = {}
-
-    for column in df_encoded.select_dtypes(include='object').columns:
-        le = LabelEncoder()
-        df_encoded[column] = le.fit_transform(df_encoded[column])
-        label_encoders[column] = le
-
-    X = df_encoded.drop("Grade", axis=1)
-    y = df_encoded["Grade"]
-
-    # Train RandomForest Model
-    rf = RandomForestClassifier()
-    rf.fit(X, y)
-
-    feature_importance = pd.DataFrame({"Feature": X.columns, "Importance": rf.feature_importances_})
-    feature_importance = feature_importance.sort_values(by="Importance", ascending=False)
-
-    # Display Feature Importance
-    st.subheader("📊 Feature Importance")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x="Importance", y="Feature", data=feature_importance, palette="mako")
-    st.pyplot(fig)
-
-    st.write("### Key Insights")
-    st.markdown("- **Attendance (%)** is the most influential factor on student grades.")
-    st.markdown("- **Study Hours** have a moderate effect, but not as strong as attendance.")
-    st.markdown("- **Quizzes and Assignments** play a significant role in predicting performance.")
-
-# Footer
-st.sidebar.info("Built with ❤️ using Streamlit")
+st.success("✅ Dashboard Loaded Successfully!")
