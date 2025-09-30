@@ -25,10 +25,7 @@ The dashboard also uses **machine learning (Random Forest)** to show feature imp
 ├── app.py # Main Streamlit app
 └── README.md # Project documentation
 
-yaml
-Copy code
 
----
 
 ## 🛠️ Tech Stack
 - **Python 3.8+**  
