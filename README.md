@@ -55,12 +55,12 @@ streamlit run app.py
 Open the local URL (usually http://localhost:8501) in your browser.
 
 📂 Example Dashboard Screenshots
+
 🔹 Key Metrics
-Average Score
 
-Average Study Hours
-
-Average Stress Level
+- Average Score
+- Average Study Hours
+- Average Stress Level
 
 🔹 Feature Importance
 Random Forest identifies which features affect student grades most.
